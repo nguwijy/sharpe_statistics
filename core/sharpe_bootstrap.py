@@ -69,29 +69,24 @@ def block_size_calibrate(ret: np.ndarray, b_vec: np.ndarray = np.array([1, 2, 4,
     return b_opt, b_vec_with_probs
 
 
-def cbb_sequence(seq_len: int, b: int) -> np.ndarray:
+def cbb_sequence(seq_len: int, b: int, batch_size: int) -> np.ndarray:
     """
     Computes a circular block bootstrap sequence applied to [0:T-1].
 
     Args:
         seq_len (int): Length of the sequence.
         b (int): Block size.
+        batch_size (int): Batch size.
 
     Returns:
         np.ndarray: Bootstrap sequence.
     """
     ll = int(np.floor(seq_len / b) + 1)
     index_sequence = np.concatenate([np.arange(seq_len), np.arange(b)])
-    sequence = np.zeros(seq_len + b)
-
-    start_points = np.random.randint(1, seq_len + 1, size=ll)
-
-    for j in range(1, ll + 1):
-        start = start_points[j - 1]
-        sequence[((j - 1) * b):(j * b)] = index_sequence[(start - 1):(start + b - 1)]
-
-    sequence = sequence[:seq_len]
-    return sequence.astype(int)
+    start_points = np.random.randint(1, seq_len + 1, size=(batch_size, ll))
+    sequence = np.array(list(zip(*(index_sequence[start_points[:, 0:] + i] for i in range(b)))))
+    sequence = sequence.transpose(0, 2, 1).reshape(batch_size, -1)
+    return sequence[:, :seq_len].astype(int)
 
 
 def sb_sequence(seq_len: int, b_av: int, length: int = None) -> np.ndarray:
@@ -159,7 +154,7 @@ def sharpe_boot(ret1: np.ndarray, ret2: np.ndarray, b: int = None, nb_boot: int 
     # Adjusted sample size for block bootstrap (using a multiple of the block size)
     t_adj = ll * b
 
-    slicings = np.array([cbb_sequence(t_adj, b) for _ in range(nb_boot)])
+    slicings = cbb_sequence(t_adj, b, nb_boot)
     ret1_star, ret2_star = ret1[slicings], ret2[slicings]
     diff_star = sharpe_ratio_diff(ret1_star, ret2_star)
     y_star, ret_stats = _compute_vhat(ret1_star, ret2_star)
