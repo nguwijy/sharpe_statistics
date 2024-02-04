@@ -167,6 +167,6 @@ def sharpe_boot(ret1: np.ndarray, ret2: np.ndarray, b: int = None, nb_boot: int 
 
     # Compute bootstrap test statistic (and update p-value accordingly)
     d_star = abs(diff_star - diff) / se_star
-    p_value = (1 + (d_star >= d).sum()) / (nb_boot + 1)
+    p_value = (d_star >= d).mean()
 
     return diff, p_value, d, b
