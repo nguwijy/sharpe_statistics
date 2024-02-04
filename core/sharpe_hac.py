@@ -1,6 +1,6 @@
 import numpy as np
-import scipy.integrate as integrate
-from typing import Callable, Tuple
+from scipy.stats import norm
+from typing import Tuple
 
 
 def _compute_vhat(ret1: np.ndarray, ret2: np.ndarray) -> Tuple:
@@ -237,7 +237,5 @@ def sharpe_hac(ret1: np.ndarray, ret2: np.ndarray, **kwargs) -> tuple:
     """
     diff = sharpe_ratio_diff(ret1, ret2)
     se = _compute_se(ret1, ret2)[0, 0]
-    func: Callable = lambda x: (1 / np.sqrt(np.pi * 2)) * np.exp(-0.5 * x ** 2)
-    pval, err = integrate.quad(func, -1000, -abs(diff) / se)
-    pval = 2 * pval
+    pval = 2 * norm.cdf(-abs(diff) / se)
     return diff, pval, se
